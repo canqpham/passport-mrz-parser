@@ -280,7 +280,7 @@ class ImageEditor extends Component {
       var image = new Image();
       image.src = dataUrl;
       image.onload = function () {
-        var resizedDataUrl = resizeImage(image, maxWidth, maxHeight, 1);
+        var resizedDataUrl = resizeImage(image, maxWidth, maxHeight, 0.82);
         fn(resizedDataUrl);
       };
     };
@@ -298,45 +298,47 @@ class ImageEditor extends Component {
       const file = dataURLtoFile(this[RandomKey].getCroppedCanvas().toDataURL(), `${'ariadirect'}.png`)
       const preview = URL.createObjectURL(file)
       console.log(file)
-      // console.log(preview)
-      // console.log(this[RandomKey].getCroppedCanvas().toDataURL())
-      // getPixelsToData(this[RandomKey].getCroppedCanvas().toDataURL())
-      // convertImgToBase64URL(this[RandomKey].getCroppedCanvas().toDataURL(), (result) => {
-      //   getImage(preview, result, file)
-
-      // })
-      // this.resize(file, 1080, 1080, (fileUrl) => {
-      //   getImage(preview, fileUrl, dataURLtoFile(fileUrl, `${randomName}.png`))
-      //   // convertImgToBase64URL(fileUrl, (result) => {
-      //     // console.log(result)
-      //   // })
-      // })
-      // let filesize = file.size / 1024
-      // let fileTest = file
-      // while(filesize < 150) {
-
-      // }
+      console.log(this[RandomKey].getCropBoxData())
+      
       if (file.size / 1024 > 500) {
-        // console.log('resize')
+        console.log('resize')
         this.resize(file, 1080, 1080, (fileUrl) => {
-          convertImgToBase64URL(fileUrl, (result) => {
-            getImage(preview, result, file, rawFile)
-    
-          })
+          console.log(fileUrl)
+          getImage(preview, fileUrl, dataURLtoFile(fileUrl, filename), rawFile) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
         })
       } else {
-        convertImgToBase64URL(this[RandomKey].getCroppedCanvas().toDataURL(), (result) => {
-          getImage(preview, result, file, rawFile)
-        })
+        getImage(preview, this[RandomKey].getCroppedCanvas().toDataURL(), file, rawFile)
       }
-
-
-
-
-
-
       // console.log(preview)
       // console.log(this[RandomKey].getCroppedCanvas().toDataURL())
+    } catch (e) {
+      console.log(e)
+    }
+  }
+
+  cropWithData = () => {
+    const { getImage, cropBoxData } = this.props
+    let { filename, rawFile } = this.state
+    // rawFile.name = `${'ariadirect'}.png`
+    console.log(rawFile)
+    try {
+      this[RandomKey].setCropBoxData(cropBoxData)
+      // const randomName = Math.random()
+      // const file = dataURLtoFile(this[RandomKey].getCroppedCanvas().toDataURL(), `${'ariadirect'}.png`)
+      // const preview = URL.createObjectURL(file)
+      // if (file.size / 1024 > 500) {
+      //   // console.log('resize')
+      //   this.resize(file, 1080, 1080, (fileUrl) => {
+      //     convertImgToBase64URL(fileUrl, (result) => {
+      //       getImage(preview, result, file, rawFile)
+    
+      //     })
+      //   })
+      // } else {
+      //   convertImgToBase64URL(this[RandomKey].getCroppedCanvas().toDataURL(), (result) => {
+      //     getImage(preview, result, file, rawFile)
+      //   })
+      // }
     } catch (e) {
       console.log(e)
     }
@@ -527,6 +529,13 @@ class ImageEditor extends Component {
                 >
                   {'Ok'}
                 </Button>
+                {/* <Button
+                  type="primary"
+                  onClick={() => this.cropWithData()}
+                  className="upload-iamge-label-button"
+                >
+                  {'Crop With Available Data'}
+                </Button> */}
               </Col>
             </Row>
 
