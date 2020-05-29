@@ -6,7 +6,7 @@ import MrzEditor from './MrzEditor'
 import { parse } from 'mrz'
 import createFetch from './fetch'
 import {dataURLtoFile} from './helpers'
-
+import {get} from 'lodash'
 
 function App() {
   const [ocr, setOcr] = useState(null);
@@ -83,58 +83,24 @@ function App() {
 
   const test = (url, base64, file, rawFile) => {
     setOcr('Recognizing...')
-    setPreview(url)
+    setPreview(base64)
     setPreProcessingImage(null)
-
-    uploadPassport(url, base64, file, rawFile)
+    // parseMrz(url, base64, file)
+    // uploadPassport(url, base64, file, rawFile)
   }
 
   const parseMrz = async (url, base64, file, rawFile) => {
-    setPreview(base64)
+    // console.log(base64)
+    // setPreview(base64)
     const res = await createFetch().post('http://localhost:5000/api/parse', {base64})
     if(res.data) setOpenModal(false)
-    let lines = res.data.lines
-        .map(line => line.text)
-        .map(text => text.replace(/ |\r\n|\r|\n/g, ""))
-      console.log(lines)
-      let text1 = lines[lines.length - 2]
-      let text2 = lines[lines.length - 1]
-      text1 = text1 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<' 
-      text1 = text1.slice(0, 44)
-      text2 = text2 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<' 
-      text2 = text2.slice(0, 44)
-      // if(text1.length < 44) {
-      //   console.log('text1 < 44: ', 44 -  text1.length)
-      //   for(let i = 0; i < (44 -  text1.length); i ++) {
-      //     console.log('text 1 + <')
-      //     text1 = text1 + '<'
-      //   }
-      // } else {
-      //   if(text1.length > 44) {
-      //     console.log('text1 > 44')
-      //     text1 = text1.slice(0, 44)
-      //   }
-      // }
-      // if(text2.length < 44) {
-      //   console.log('text2 < 44: ', 44 -  text2.length)
-      //   text2 += text2 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<' 
-      //   text2 = text2.slice(0, 44)
-      //   // for(let j = 0; j < (44 -  text2.length); j ++) {
-      //   //   console.log('text 2 + <')
-      //   //   text2 = text2 + '<'
-      //   // }
-      // } else {
-      //   if(text2.length > 44) {
-      //     console.log('text1 > 44')
-      //     text2 = text2.slice(0, 44)
-      //   }
-      // }
-      setText1(text1)
-      setText2(text2)
-      contentArea = lines.join("\r\n");
-      console.log(contentArea);
+    console.log(res.data)
+    setResult(res.data)
+    setText1(get(res, 'data.text1'))
+    setText2(get(res, 'data.text2'))
       // check(lines[0], lines[1])
   }
+  // console.log(result)
 
   return (
     <div className="App">
@@ -171,9 +137,11 @@ function App() {
       }
       <p>{ocr && ocr}</p>
       {preview && <p>Passport MRZ</p>}
-      {preview && <img style={{maxWidth: "65%"}} src={preview} alt="" />}
+      {preview && <img style={{maxWidth: "800px", minWidth: "700px"}} src={preview} alt="" />}
       {preProcessingImage && <p>Image after processing</p>}
-      {preProcessingImage && <img style={{maxWidth: "65%"}} src={preProcessingImage} alt="" />}
+      {preProcessingImage && <img style={{maxWidth: "600px"}} src={preProcessingImage} alt="" />}
+      <br />
+      <Button onClick={() => parseMrz(null, preview)}>Parse Image to MRZ</Button>
       <br />
       <em>Line 1 missing&nbsp;{44 - (text1 || '').length}</em>
       <Input
@@ -185,7 +153,7 @@ function App() {
         value={text2}
         onChange={e => setText2(e.target.value)}
       />
-      <Button onClick={() => check()}>Parse</Button>
+      <Button onClick={() => check()}>Parse MRZ To Information</Button>
       {result && result.details  && result.details.map((item, index) => {
         return (
           <p key={index}>{item.label}:&nbsp;{item.value}</p>
