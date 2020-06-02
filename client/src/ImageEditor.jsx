@@ -270,6 +270,8 @@ class ImageEditor extends Component {
     this.useDefaultImage = this.useDefaultImage.bind(this)
   }
 
+  
+
   resize = (file, maxWidth, maxHeight, fn) => {
     const resizeImage = (image, maxWidth, maxHeight, quality) => {
       var canvas = document.createElement('canvas');
@@ -310,6 +312,16 @@ class ImageEditor extends Component {
     };
   }
 
+  componentDidMount() {
+    // setTimeout(() => {
+    // this[RandomKey].setCropBoxData({
+      // height: 70.73828125,
+      // left: 323.5,
+      // top: 295.53125,
+      // width: 480.1015625
+    // })
+    // }, 1000)
+  }
 
 
   cropImage = (e) => {
@@ -323,7 +335,7 @@ class ImageEditor extends Component {
       const file = dataURLtoFile(this[RandomKey].getCroppedCanvas().toDataURL(), `${'ariadirect'}.png`)
       const preview = URL.createObjectURL(file)
       // console.log(file)
-      // console.log(this[RandomKey].getCropBoxData())
+      console.log(this[RandomKey].getCropBoxData())
 
       // Available
       // if (file.size / 1024 > 500) {
@@ -341,10 +353,11 @@ class ImageEditor extends Component {
         const preFile = dataURLtoFile(result, `${'ariadirect'}.png`)
         if (file.size / 1024 > 500) {
           this.resize(preFile, 1080, 1080, (fileUrl) => {
-            //     console.log(fileUrl)
-            getImage(preview, fileUrl, dataURLtoFile(fileUrl, `${'ariadirect'}.png`)) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
+            console.log(dataURLtoFile(fileUrl, `${'ariadirect'}.jpg`))
+            getImage(preview, fileUrl, dataURLtoFile(fileUrl, `${'ariadirect'}.jpg`)) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
           })
         } else {
+          console.log(preFile)
           getImage(preview, result, preFile)
         }
         this.setState({ avgBrightness, avgT })
@@ -465,6 +478,12 @@ class ImageEditor extends Component {
                   src={this.state.src}
                   ref={cropper => { this[RandomKey] = cropper }}
                   movable
+                  // data={{
+                  //     height: 70.73828125,
+                  //     left: 323.5,
+                  //     top: 295.53125,
+                  //     width: 1080.1015625
+                  // }}
                 // rotatable
                 /> :
                 <>
@@ -486,6 +505,7 @@ class ImageEditor extends Component {
                         message.error(`${info.file.name} file upload failed.`);
                       }
                     }}
+                    
                   >
                     <p className="ant-upload-drag-icon">
                       <Icon type="inbox" />

@@ -6,6 +6,8 @@ const path = require('path')
 const http = require('http')
 const cors = require('cors')
 const {parse} = require('mrz')
+const multer = require('multer')
+const fs = require('fs')
 var router = express.Router()
 
 let worker
@@ -18,6 +20,18 @@ try {
 } catch (e) {
     console.log(e)
 }
+
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, './uploads')
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname)
+    }
+})
+
+const upload = multer({storage: storage}).single('file')
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -37,31 +51,40 @@ const TESSERACT_CONFIG = {
     tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"
 };
 
+
 app.use('/api', router.post('/parse', async (req, res) => {
-    const base64 = req.body.base64 || null
     try {
-        await worker.load();
-        await worker.loadLanguage('mrz');
-        await worker.initialize('mrz');
-        await worker.setParameters(TESSERACT_CONFIG);
-        const { data } = await worker.recognize(base64)
-        let lines = [];
-        (data.lines || []).map(item => {
-            if (!(item.length < 10)) {
-                lines.push(item)
-            }
+        upload(req, res, async (err) => {
+            await worker.load();
+            await worker.loadLanguage('mrz');
+            await worker.initialize('mrz');
+            await worker.setParameters(TESSERACT_CONFIG);
+            const { data } = await worker.recognize(`./uploads/${req.file.originalname}`)
+            fs.unlink(`./uploads/${req.file.originalname}`, (err) => {
+                if (err) {
+                    console.error(err)
+                    return
+                  }
+            })
+            let lines = [];
+            (data.lines || []).map(item => {
+                if (!(item.length < 10)) {
+                    lines.push(item)
+                }
+            })
+            lines = lines.map(line => line.text)
+                .map(text => text.replace(/ |\r\n|\r|\n/g, ""))
+            console.log(lines)
+            let text1 = lines[lines.length - 2]
+            let text2 = lines[lines.length - 1]
+            text1 = text1 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+            text1 = text1.slice(0, 44)
+            text2 = text2 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+            text2 = text2.slice(0, 44)
+            const result = lines ? parse([text1, text2]) : { valid: false };
+            return res.json({ ...result, text1, text2 })
+            // console.log(req.file)
         })
-        lines = lines.map(line => line.text)
-            .map(text => text.replace(/ |\r\n|\r|\n/g, ""))
-        console.log(lines)
-        let text1 = lines[lines.length - 2]
-        let text2 = lines[lines.length - 1]
-        text1 = text1 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
-        text1 = text1.slice(0, 44)
-        text2 = text2 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
-        text2 = text2.slice(0, 44)
-        const result = lines ? parse([text1, text2]) : { valid: false };
-        return res.json({ ...result, text1, text2 })
     } catch (e) {
         console.log(req.file.originalname, '  parse error')
         return res.json(null)

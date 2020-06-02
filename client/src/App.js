@@ -80,19 +80,24 @@ function App() {
   // });
 
   const [preview, setPreview] = useState(null)
+  const [fileTest, setFile] = useState(null)
 
   const test = (url, base64, file, rawFile) => {
     setOcr('Recognizing...')
     setPreview(base64)
     setPreProcessingImage(null)
+    setFile(file)
     // parseMrz(url, base64, file)
     // uploadPassport(url, base64, file, rawFile)
   }
 
   const parseMrz = async (url, base64, file, rawFile) => {
-    // console.log(base64)
+    console.log(fileTest)
     // setPreview(base64)
-    const res = await createFetch().post('http://localhost:5000/api/parse', {base64})
+    let body = new FormData();
+    body.append('file', fileTest);
+
+    const res = await createFetch().post('http://localhost:5000/api/parse', body)
     if(res.data) setOpenModal(false)
     console.log(res.data)
     setResult(res.data)
