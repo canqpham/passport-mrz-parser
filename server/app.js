@@ -5,20 +5,19 @@ const { createWorker } = require('tesseract.js')
 const path = require('path')
 const http = require('http')
 const cors = require('cors')
-const {parse} = require('mrz')
+const { parse } = require('mrz')
 const multer = require('multer')
 const fs = require('fs')
-var router = express.Router()
+const { sum, compact } = require('lodash')
 
 let worker
-
 try {
     worker = createWorker({
         langPath: path.join(__dirname, './', 'lang-data'),
         logger: m => console.log(m),
     })
 } catch (e) {
-    console.log('err ', e)
+    console.log(e)
 }
 
 
@@ -31,7 +30,7 @@ const storage = multer.diskStorage({
     }
 })
 
-const upload = multer({storage: storage}).single('file')
+const upload = multer({ storage: storage })
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -51,46 +50,88 @@ const TESSERACT_CONFIG = {
     tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"
 };
 
+const parseMrz = (data) => {
+    let lines = [];
+    console.log(data.lines)
+    if (!data) return {}
+        (data.lines || []).map(item => {
+            if (!(item.text.length < 10)) {
+                lines.push(item)
+            }
+        })
+    lines = data.lines.map(line => line.text.length > 30 && line.text)
+        .map(text => text && text.replace(/ |\r\n|\r|\n/g, ""))
+    console.log(lines)
+    lines = compact(lines)
+    let text1 = lines[lines.length - 2]
+    let text2 = lines[lines.length - 1]
+    text1 = text1 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+    text1 = text1.slice(0, 44)
+    text2 = text2 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+    text2 = text2.slice(0, 44)
+    const result = lines ? parse([text1, text2]) : { valid: false };
+    return { ...result, text1, text2 }
+}
 
-app.use('/api', router.post('/parse', async (req, res) => {
-    upload(req, res, async (err) => {
-        try {
-            await worker.load();
-            await worker.loadLanguage('mrz');
-            await worker.initialize('mrz');
-            await worker.setParameters(TESSERACT_CONFIG);
-            const { data } = await worker.recognize(`./uploads/${req.file.originalname}`)
-            console.log(data)
-            // fs.unlink(`./uploads/${req.file.originalname}`, (err) => {
-            //     if (err) {
-            //         console.error(err)
-            //         return
-            //       }
-            // })
-            let lines = [];
-            (data.lines || []).map(item => {
-                if (!(item.length < 10)) {
-                    lines.push(item)
+app.post('/api/parse', upload.array('file'), async (req, response) => {
+
+    try {
+        const files = req.files
+        const result = []
+        await worker.load();
+        await worker.loadLanguage('mrz');
+        await worker.initialize('mrz');
+        await worker.setParameters(TESSERACT_CONFIG);
+        const handleRequest = () => {
+            let bestData = {}
+            let bestCount = 0
+            result.map(item => {
+                const count = sum(item.details.map(it => it.value && 1))
+                console.log(count)
+                if (count > bestCount) {
+                    bestCount = count
+                    bestData = item
                 }
             })
-            lines = lines.map(line => line.text)
-                .map(text => text.replace(/ |\r\n|\r|\n/g, ""))
-            console.log(lines)
-            let text1 = lines[0]
-            let text2 = lines[1]
-            text1 = text1 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
-            text1 = text1.slice(0, 44)
-            text2 = text2 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
-            text2 = text2.slice(0, 44)
-            const result = lines ? parse([text1, text2]) : { valid: false };
-            return res.json({ ...result, text1, text2 })
-            // console.log(req.file)
-        } catch (e) {
-            console.log('parse error')
-            return res.json(null)
+            console.log('Files Count: ', files.length)
+            response.json(bestData)
         }
-    })
-}));
+        worker.recognize(`./uploads/${files[0].originalname}`).then(res1 => {
+            result.push(parseMrz(res1.data))
+            if(files[1]) {
+                worker.recognize(`./uploads/${files[1].originalname}`).then(res2 => {
+                    result.push(parseMrz(res2.data))
+                    if(files[2]) {
+                        worker.recognize(`./uploads/${files[2].originalname}`).then(res3 => {
+                            result.push(parseMrz(res3.data))
+                            if(files[3]) {
+                                worker.recognize(`./uploads/${files[3].originalname}`).then(res4 => {
+                                    console.log(res4.data.lines[0].text)
+                                    console.log(res4.data.lines[1].text)
+                                    result.push(parseMrz(res4.data))
+                                    handleRequest()
+                                })
+                            } else {
+                                handleRequest()
+                            }
+                        })
+                    } else {
+                        handleRequest()
+                    }
+                })
+
+            } else {
+                handleRequest()
+            }
+        })
+    } catch (e) {
+        console.log(e)
+        response.json(null)
+    }
+    if (!req.files) {
+        console.log('Cannot get file')
+    }
+})
 
 
 const server = http.createServer(app);

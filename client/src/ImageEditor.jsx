@@ -164,7 +164,8 @@ function greyscaleImage(url, ratio, callback) {
   var img = new Image()
   img.onload = function () {
     var canvas = document.createElement('CANVAS')
-    let ctx = canvas.getContext('2d'), dataURL
+    let ctx = canvas.getContext('2d')
+    let dataURL
     canvas.height = img.height
     canvas.width = img.width
 
@@ -177,29 +178,48 @@ function greyscaleImage(url, ratio, callback) {
       return total / grades.length;
     }
     let avgBrightness = getAvg(imgPixels.data)
-    let avgT = avgBrightness > 185 ? 0.80 : 0.7
+    let avgT = avgBrightness > 186 ? 0.80 : 0.73
+    let arrayT = avgBrightness > 185 ? [0.6, 0.7, 0.8] : [0.4, 0.6, 0.7]
     if(avgBrightness > 210) {
       avgT = 0.85
     } 
     if(avgBrightness < 160) {
-      avgT = 0.65
+      avgT = 0.68
     }
     console.log(avgT)
     /**
      * Test
      */
-    computeAdaptiveThreshold(imgPixels, avgT, (result) => {
-      // imgPixels.data = result
-      // console.log(result)
-      // console.log(otsu(imgPixels.data, imgPixels.data.length))
-      ctx.putImageData(result, 0, 0, 0, 0, imgPixels.width, imgPixels.height);
-      // ctx.drawImage(img, 0, 0)
-      // console.log(canvas)
-      dataURL = canvas.toDataURL('image/jpeg')
-      // console.log(dataURL)
-      callback(dataURL, avgBrightness, avgT)
-      canvas = null
+    let results = [];
+    [0.4, 0.6, 0.7, 0.8].map(item => {
+      computeAdaptiveThreshold(imgPixels, item, (result) => {
+        // imgPixels.data = result
+        // console.log(result)
+        // console.log(otsu(imgPixels.data, imgPixels.data.length))
+        ctx.putImageData(result, 0, 0, 0, 0, imgPixels.width, imgPixels.height);
+        // ctx.drawImage(img, 0, 0)
+        // console.log(canvas)
+        const tee = canvas.toDataURL('image/jpeg')
+        // console.log(dataURL)
+        results.push(tee)
+        // canvas = null
+      })
     })
+    if(results.length) {
+      callback(results, avgBrightness, avgT)
+    }
+    // computeAdaptiveThreshold(imgPixels, ratio, (result) => {
+    //   // imgPixels.data = result
+    //   // console.log(result)
+    //   // console.log(otsu(imgPixels.data, imgPixels.data.length))
+    //   ctx.putImageData(result, 0, 0, 0, 0, imgPixels.width, imgPixels.height);
+    //   // ctx.drawImage(img, 0, 0)
+    //   // console.log(canvas)
+    //   dataURL = canvas.toDataURL('image/jpeg')
+    //   // console.log(dataURL)
+    //   callback(dataURL, avgBrightness, avgT)
+    //   canvas = null
+    // })
     // console.log(imgPixels)
     // console.log(otsu(imgPixels.data, imgPixels.data.length))
 
@@ -306,7 +326,7 @@ class ImageEditor extends Component {
       var image = new Image();
       image.src = dataUrl;
       image.onload = function () {
-        var resizedDataUrl = resizeImage(image, maxWidth, maxHeight, 0.82);
+        var resizedDataUrl = resizeImage(image, maxWidth, maxHeight, 1);
         fn(resizedDataUrl);
       };
     };
@@ -349,17 +369,28 @@ class ImageEditor extends Component {
       // }
 
       //Test
-      greyscaleImage(this[RandomKey].getCroppedCanvas().toDataURL(), ratio, (result, avgBrightness, avgT) => {
-        const preFile = dataURLtoFile(result, `${'ariadirect'}.png`)
-        if (file.size / 1024 > 300) {
-          this.resize(preFile, 1080, 1080, (fileUrl) => {
-            console.log(dataURLtoFile(fileUrl, `${'ariadirect'}.jpg`))
-            getImage(preview, fileUrl, dataURLtoFile(fileUrl, `${'ariadirect'}.jpg`)) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
-          })
-        } else {
-          console.log(preFile)
-          getImage(preview, result, preFile)
-        }
+      greyscaleImage(this[RandomKey].getCroppedCanvas().toDataURL(), ratio, (results, avgBrightness, avgT) => {
+        // const preFile = dataURLtoFile(result, `${'ariadirect'}.png`)
+        console.log(results)
+        const listFiles = (results || []).map(item => {
+          const fileaaa = dataURLtoFile(item, `${Math.random()}.jpg`)
+          return fileaaa
+          // if (fileaaa.size / 1024 > 200) {
+          //   return this.resize(fileaaa, 720, 720, (fileUrl) => {
+          //     return (dataURLtoFile(fileUrl, `${Math.random()}.jpg`))
+          //   })
+          // } else {
+          // }
+        })
+        getImage(preview, results, listFiles) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
+        // if (file.size / 1024 > 300) {
+        //   this.resize(preFile, 720, 720, (fileUrl) => {
+        //     console.log(dataURLtoFile(fileUrl, `${'ariadirect'}.jpg`))
+        //   })
+        // } else {
+        //   console.log(preFile)
+        //   getImage(preview, result, preFile)
+        // }
         this.setState({ avgBrightness, avgT })
       })
 
@@ -628,14 +659,14 @@ class ImageEditor extends Component {
                 Ratio
               <Input
                   defaultValue={this.state.ratio}
-                  value={avgT}
+                  // value={avgT}
                   onChange={e => this.changeRatio(e.target.value)}
                   style={{ maxWidth: '600px' }}
                   type="number"
                   min="0"
                   // max="1"
                   step="0.05"
-                  disabled={true}
+                  // disabled={true}
                 />
               </Row>
               <Row>
