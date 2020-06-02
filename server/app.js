@@ -18,7 +18,7 @@ try {
         logger: m => console.log(m),
     })
 } catch (e) {
-    console.log(e)
+    console.log('err ', e)
 }
 
 
@@ -53,19 +53,20 @@ const TESSERACT_CONFIG = {
 
 
 app.use('/api', router.post('/parse', async (req, res) => {
-    try {
-        upload(req, res, async (err) => {
+    upload(req, res, async (err) => {
+        try {
             await worker.load();
             await worker.loadLanguage('mrz');
             await worker.initialize('mrz');
             await worker.setParameters(TESSERACT_CONFIG);
             const { data } = await worker.recognize(`./uploads/${req.file.originalname}`)
-            fs.unlink(`./uploads/${req.file.originalname}`, (err) => {
-                if (err) {
-                    console.error(err)
-                    return
-                  }
-            })
+            console.log(data)
+            // fs.unlink(`./uploads/${req.file.originalname}`, (err) => {
+            //     if (err) {
+            //         console.error(err)
+            //         return
+            //       }
+            // })
             let lines = [];
             (data.lines || []).map(item => {
                 if (!(item.length < 10)) {
@@ -75,8 +76,8 @@ app.use('/api', router.post('/parse', async (req, res) => {
             lines = lines.map(line => line.text)
                 .map(text => text.replace(/ |\r\n|\r|\n/g, ""))
             console.log(lines)
-            let text1 = lines[lines.length - 2]
-            let text2 = lines[lines.length - 1]
+            let text1 = lines[0]
+            let text2 = lines[1]
             text1 = text1 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
             text1 = text1.slice(0, 44)
             text2 = text2 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
@@ -84,11 +85,11 @@ app.use('/api', router.post('/parse', async (req, res) => {
             const result = lines ? parse([text1, text2]) : { valid: false };
             return res.json({ ...result, text1, text2 })
             // console.log(req.file)
-        })
-    } catch (e) {
-        console.log(req.file.originalname, '  parse error')
-        return res.json(null)
-    }
+        } catch (e) {
+            console.log('parse error')
+            return res.json(null)
+        }
+    })
 }));
 
 

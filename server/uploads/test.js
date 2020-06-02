@@ -1,0 +1,1 @@
+const t = 'This empty file'

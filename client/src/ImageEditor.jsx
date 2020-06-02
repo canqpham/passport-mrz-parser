@@ -177,12 +177,12 @@ function greyscaleImage(url, ratio, callback) {
       return total / grades.length;
     }
     let avgBrightness = getAvg(imgPixels.data)
-    let avgT = avgBrightness > 185 ? 0.80 : 0.75
+    let avgT = avgBrightness > 185 ? 0.80 : 0.7
     if(avgBrightness > 210) {
       avgT = 0.85
     } 
     if(avgBrightness < 160) {
-      avgT = 0.7
+      avgT = 0.65
     }
     console.log(avgT)
     /**
@@ -351,7 +351,7 @@ class ImageEditor extends Component {
       //Test
       greyscaleImage(this[RandomKey].getCroppedCanvas().toDataURL(), ratio, (result, avgBrightness, avgT) => {
         const preFile = dataURLtoFile(result, `${'ariadirect'}.png`)
-        if (file.size / 1024 > 500) {
+        if (file.size / 1024 > 300) {
           this.resize(preFile, 1080, 1080, (fileUrl) => {
             console.log(dataURLtoFile(fileUrl, `${'ariadirect'}.jpg`))
             getImage(preview, fileUrl, dataURLtoFile(fileUrl, `${'ariadirect'}.jpg`)) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
