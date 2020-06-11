@@ -160,6 +160,46 @@ function computeAdaptiveThreshold(sourceImageData, ratio, callback) {
   callback(result);
 }
 
+const resize = (file, maxWidth, maxHeight, fn) => {
+  const resizeImage = (image, maxWidth, maxHeight, quality) => {
+    var canvas = document.createElement('canvas');
+
+    var width = image.width;
+    var height = image.height;
+
+    if (width > height) {
+      if (width > maxWidth) {
+        height = Math.round(height * maxWidth / width);
+        width = maxWidth;
+      }
+    } else {
+      if (height > maxHeight) {
+        width = Math.round(width * maxHeight / height);
+        height = maxHeight;
+      }
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL("image/jpeg", quality);
+  }
+  var reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = function (event) {
+    var dataUrl = event.target.result;
+
+    var image = new Image();
+    image.src = dataUrl;
+    image.onload = function () {
+      var resizedDataUrl = resizeImage(image, maxWidth, maxHeight, 1);
+      fn(resizedDataUrl);
+    };
+  };
+}
+
 function greyscaleImage(url, ratio, callback) {
   var img = new Image()
   img.onload = function () {
@@ -191,7 +231,7 @@ function greyscaleImage(url, ratio, callback) {
      * Test
      */
     let results = [];
-    [0.4, 0.6, 0.7, 0.8].map(item => {
+    [0.4, 0.6, 0.7, 0.8].map((item, index) => {
       computeAdaptiveThreshold(imgPixels, item, (result) => {
         // imgPixels.data = result
         // console.log(result)
@@ -200,72 +240,24 @@ function greyscaleImage(url, ratio, callback) {
         // ctx.drawImage(img, 0, 0)
         // console.log(canvas)
         const tee = canvas.toDataURL('image/jpeg')
-        // console.log(dataURL)
+        // const file = dataURLtoFile(tee, `${Math.random()}.jpg`)
+        // if(imgPixels.width < 720) {
+        //   resize(file, 1080, 1080, (res) => {
+        //     results.push(res)
+        //     console.log(res)
+        //   })
+        // } else {
+        // }
         results.push(tee)
+
+        // console.log(dataURL)
         // canvas = null
       })
     })
     if(results.length) {
       callback(results, avgBrightness, avgT)
     }
-    // computeAdaptiveThreshold(imgPixels, ratio, (result) => {
-    //   // imgPixels.data = result
-    //   // console.log(result)
-    //   // console.log(otsu(imgPixels.data, imgPixels.data.length))
-    //   ctx.putImageData(result, 0, 0, 0, 0, imgPixels.width, imgPixels.height);
-    //   // ctx.drawImage(img, 0, 0)
-    //   // console.log(canvas)
-    //   dataURL = canvas.toDataURL('image/jpeg')
-    //   // console.log(dataURL)
-    //   callback(dataURL, avgBrightness, avgT)
-    //   canvas = null
-    // })
-    // console.log(imgPixels)
-    // console.log(otsu(imgPixels.data, imgPixels.data.length))
-
-    /**
-     * Available
-     */
-    // function getAvg(grades) {
-    //   const total = grades.reduce((acc, c) => acc + c, 0);
-    //   return total / grades.length;
-    // }
-    // const avgT = getAvg(imgPixels.data) > 185 ? 160 : 99
-    // console.log(avgT)
-
-    // for (var y = 0; y < imgPixels.height; y++) {
-    //   for (var x = 0; x < imgPixels.width; x++) {
-    //     // var i = (y * imgPixels.width) + x ;
-    //     var i = (y * 4) * imgPixels.width + x * 4;
-    //     // if(i < 100) {
-    //     //   console.log(i)
-    //     // }
-    //     var avg = (imgPixels.data[i] + imgPixels.data[i + 1] + imgPixels.data[i + 2]) / 3;
-    //     // if(imgPixels.data[i] < 48) {
-    //     //   avg=0
-    //     // } else {
-    //     //   avg=255
-    //     // }
-    //     if(avg < avgT) {
-    //       avg = 0
-    //     } else {
-    //       avg = 255
-    //     }
-    //     imgPixels.data[i] = avg;
-    //     imgPixels.data[i + 1] = avg;
-    //     imgPixels.data[i + 2] = avg;
-    //   }
-    // }
-
-    // ctx.putImageData(imgPixels, 0, 0, 0, 0, imgPixels.width, imgPixels.height);
-
-
-    // ctx.drawImage(img, 0, 0)
-    // console.log(canvas)
-    // dataURL = canvas.toDataURL('image/jpeg')
-    // // console.log(dataURL)
-    // callback(dataURL)
-    // canvas = null
+    
   }
   img.crossOrigin = 'Anonymous' //Use-Credentials
   img.src = url
@@ -292,45 +284,7 @@ class ImageEditor extends Component {
 
   
 
-  resize = (file, maxWidth, maxHeight, fn) => {
-    const resizeImage = (image, maxWidth, maxHeight, quality) => {
-      var canvas = document.createElement('canvas');
-
-      var width = image.width;
-      var height = image.height;
-
-      if (width > height) {
-        if (width > maxWidth) {
-          height = Math.round(height * maxWidth / width);
-          width = maxWidth;
-        }
-      } else {
-        if (height > maxHeight) {
-          width = Math.round(width * maxHeight / height);
-          height = maxHeight;
-        }
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-
-      var ctx = canvas.getContext("2d");
-      ctx.drawImage(image, 0, 0, width, height);
-      return canvas.toDataURL("image/jpeg", quality);
-    }
-    var reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = function (event) {
-      var dataUrl = event.target.result;
-
-      var image = new Image();
-      image.src = dataUrl;
-      image.onload = function () {
-        var resizedDataUrl = resizeImage(image, maxWidth, maxHeight, 1);
-        fn(resizedDataUrl);
-      };
-    };
-  }
+  
 
   componentDidMount() {
     // setTimeout(() => {
@@ -352,47 +306,34 @@ class ImageEditor extends Component {
     console.log(rawFile)
     try {
       const randomName = Math.random()
-      const file = dataURLtoFile(this[RandomKey].getCroppedCanvas().toDataURL(), `${'ariadirect'}.png`)
+      const file = dataURLtoFile(this[RandomKey].getCroppedCanvas().toDataURL(), `${Math.random()}.jpg`)
+      // this.setState
       const preview = URL.createObjectURL(file)
       // console.log(file)
       console.log(this[RandomKey].getCropBoxData())
 
-      // Available
-      // if (file.size / 1024 > 500) {
-      //   console.log('resize')
-      //   this.resize(file, 1080, 1080, (fileUrl) => {
-      //     console.log(fileUrl)
-      //     getImage(preview, fileUrl, dataURLtoFile(fileUrl, filename), rawFile) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
-      //   })
-      // } else {
-      //   getImage(preview, this[RandomKey].getCroppedCanvas().toDataURL(), file, rawFile)
-      // }
+      getImage(preview, this[RandomKey].getCroppedCanvas().toDataURL(), file) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
+  
 
       //Test
-      greyscaleImage(this[RandomKey].getCroppedCanvas().toDataURL(), ratio, (results, avgBrightness, avgT) => {
-        // const preFile = dataURLtoFile(result, `${'ariadirect'}.png`)
-        console.log(results)
-        const listFiles = (results || []).map(item => {
-          const fileaaa = dataURLtoFile(item, `${Math.random()}.jpg`)
-          return fileaaa
-          // if (fileaaa.size / 1024 > 200) {
-          //   return this.resize(fileaaa, 720, 720, (fileUrl) => {
-          //     return (dataURLtoFile(fileUrl, `${Math.random()}.jpg`))
-          //   })
-          // } else {
-          // }
-        })
-        getImage(preview, results, listFiles) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
-        // if (file.size / 1024 > 300) {
-        //   this.resize(preFile, 720, 720, (fileUrl) => {
-        //     console.log(dataURLtoFile(fileUrl, `${'ariadirect'}.jpg`))
-        //   })
-        // } else {
-        //   console.log(preFile)
-        //   getImage(preview, result, preFile)
-        // }
-        this.setState({ avgBrightness, avgT })
-      })
+      // greyscaleImage(this[RandomKey].getCroppedCanvas().toDataURL(), ratio, (results, avgBrightness, avgT) => {
+      //   // const preFile = dataURLtoFile(result, `${'ariadirect'}.png`)
+      //   console.log(results)
+      //   const listFiles = (results || []).map(item => {
+      //     const fileaaa = dataURLtoFile(item, `${Math.random()}.jpg`)
+      //     return fileaaa
+      //   })
+      //   getImage(preview, this[RandomKey].getCroppedCanvas().toDataURL(), [...listFiles, file], file) //dataURLtoFile(fileUrl, `${'ariadirect'}.png`)
+      //   // if (file.size / 1024 > 300) {
+      //   //   this.resize(preFile, 720, 720, (fileUrl) => {
+      //   //     console.log(dataURLtoFile(fileUrl, `${'ariadirect'}.jpg`))
+      //   //   })
+      //   // } else {
+      //   //   console.log(preFile)
+      //   //   getImage(preview, result, preFile)
+      //   // }
+      //   this.setState({ avgBrightness, avgT })
+      // })
 
     } catch (e) {
       console.log(e)
@@ -406,22 +347,6 @@ class ImageEditor extends Component {
     console.log(rawFile)
     try {
       this[RandomKey].setCropBoxData(cropBoxData)
-      // const randomName = Math.random()
-      // const file = dataURLtoFile(this[RandomKey].getCroppedCanvas().toDataURL(), `${'ariadirect'}.png`)
-      // const preview = URL.createObjectURL(file)
-      // if (file.size / 1024 > 500) {
-      //   // console.log('resize')
-      //   this.resize(file, 1080, 1080, (fileUrl) => {
-      //     convertImgToBase64URL(fileUrl, (result) => {
-      //       getImage(preview, result, file, rawFile)
-
-      //     })
-      //   })
-      // } else {
-      //   convertImgToBase64URL(this[RandomKey].getCroppedCanvas().toDataURL(), (result) => {
-      //     getImage(preview, result, file, rawFile)
-      //   })
-      // }
     } catch (e) {
       console.log(e)
     }
@@ -654,7 +579,7 @@ class ImageEditor extends Component {
             <Form
               onSubmit={this.cropImage}
             >
-              <p>Brightness: {avgBrightness}</p>
+              {/* <p>Brightness: {avgBrightness}</p>
               <Row>
                 Ratio
               <Input
@@ -668,7 +593,7 @@ class ImageEditor extends Component {
                   step="0.05"
                   // disabled={true}
                 />
-              </Row>
+              </Row> */}
               <Row>
 
                 {this.state.src && <Button

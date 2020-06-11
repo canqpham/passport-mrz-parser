@@ -9,6 +9,9 @@ const { parse } = require('mrz')
 const multer = require('multer')
 const fs = require('fs')
 const { sum, compact } = require('lodash')
+const detect = require('./src/detect')
+var rimraf = require("rimraf");
+const greyscaleImage = require('./src/helper')
 
 let worker
 try {
@@ -16,6 +19,7 @@ try {
         langPath: path.join(__dirname, './', 'lang-data'),
         logger: m => console.log(m),
     })
+
 } catch (e) {
     console.log(e)
 }
@@ -67,14 +71,14 @@ const parseMrz = (data) => {
     let text2 = lines[lines.length - 1]
     text1 = text1 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
     text1 = text1.slice(0, 44)
+    text1.indexOf('F') == 0 ? text1 = text1.replace('F', 'P') : text1;
     text2 = text2 + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
     text2 = text2.slice(0, 44)
     const result = lines ? parse([text1, text2]) : { valid: false };
     return { ...result, text1, text2 }
 }
 
-app.post('/api/parse', upload.array('file'), async (req, response) => {
-
+app.post('/api/parseMrz', upload.array('file'), async (req, response) => {
     try {
         const files = req.files
         const result = []
@@ -98,13 +102,13 @@ app.post('/api/parse', upload.array('file'), async (req, response) => {
         }
         worker.recognize(`./uploads/${files[0].originalname}`).then(res1 => {
             result.push(parseMrz(res1.data))
-            if(files[1]) {
+            if (files[1]) {
                 worker.recognize(`./uploads/${files[1].originalname}`).then(res2 => {
                     result.push(parseMrz(res2.data))
-                    if(files[2]) {
+                    if (files[2]) {
                         worker.recognize(`./uploads/${files[2].originalname}`).then(res3 => {
                             result.push(parseMrz(res3.data))
-                            if(files[3]) {
+                            if (files[3]) {
                                 worker.recognize(`./uploads/${files[3].originalname}`).then(res4 => {
                                     console.log(res4.data.lines[0].text)
                                     console.log(res4.data.lines[1].text)
@@ -133,9 +137,64 @@ app.post('/api/parse', upload.array('file'), async (req, response) => {
     }
 })
 
+app.post('/api/parsePassport', upload.array('file'), async (req, response) => {
+    console.log('called')
+    try {
+        const files = req.files
+        let result = []
+        // cons
+        for (let i = 0; i < files.length; i++) {
+            await detect(`./uploads/${files[i].originalname}`)
+        }
+        const handleRequest = (results) => {
+            let bestData = {}
+            let bestCount = 0
+            results.map(item => {
+                const count = sum(item.details.map(it => it.value ? 1 : 0))
+                console.log('count   ', count)
+                if (count > bestCount) {
+                    bestCount = count
+                    bestData = item
+                }
+            })
+            console.log('Files Count: ', results.length)
+            console.log('bestCount   ', bestCount)
+            response.json(bestData)
+            rimraf('./uploads', () => {
+                fs.mkdirSync('./uploads');
+                console.log("done");
+            })
+        }
+        if (fs.existsSync(`./uploads/out/crop/${files[0].originalname}`)) {
+            await worker.load();
+            await worker.loadLanguage('mrz');
+            await worker.initialize('mrz');
+            await worker.setParameters(TESSERACT_CONFIG);
+            greyscaleImage(`./uploads/out/crop/${files[0].originalname}`, 1, async (results) => {
+                for (let i = 0; i < results.length; i++) {
+                    const { data } = await worker.recognize(results[i])
+                    result.push({ ...parseMrz(data), preprocessingImage: results[i] })
+                    const count = sum((data.details || []).map(it => it.value && 1))
+                    if (count === 15) {
+                        break;
+                    }
+                }
+                handleRequest(result)
+            })
+        }
+    } catch (e) {
+        console.log(e)
+        response.json(null)
+    }
+    if (!req.files) {
+        console.log('Cannot get file')
+    }
+})
+
+
 
 const server = http.createServer(app);
 
-const PORT = 5000 || process.env.PORT
+const PORT = 5001 || process.env.PORT
 
 server.listen(PORT, () => console.log('Listening on port ' + PORT))

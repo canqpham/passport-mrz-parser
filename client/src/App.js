@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
-import { Input, Button, Modal } from 'antd'
+import { Input, Button, Modal, Icon } from 'antd'
 import ImageEditor from './ImageEditor'
 import MrzEditor from './MrzEditor'
 import { parse } from 'mrz'
@@ -78,37 +78,53 @@ function App() {
   // useEffect(() => {
   //   doOCR();
   // });
-
+  let interval = null
   const [preview, setPreview] = useState(null)
   const [fileTest, setFile] = useState(null)
-
-  const test = (url, base64, files, rawFile) => {
+  const [rawFileStored, setRawFile] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const test = (url, base64, rawFile) => {
     setOcr('Recognizing...')
-    setPreview(base64[0])
-    setPreProcessingImage(null)
-    setFile(files)
-    console.log(files)
-    // parseMrz(url, base64, file)
+    setResult(null)
+    setPreview(url)
+    // setPreProcessingImage(null)
+    // setFile(files)
+    // setRawFile(rawFile)
+    // // console.log(base64)
+    // console.log(rawFile)
+    // console.log(url)
+    interval = setInterval(() => {
+      setCount(count + 1)
+    }, 1000)
+    // interval
+    parseMrz(rawFile)
     // uploadPassport(url, base64, file, rawFile)
   }
 
-  const parseMrz = async (url, base64, file, rawFile) => {
-    console.log(fileTest)
+  const [count, setCount] = useState(0)
+  const parseMrz = async (rawFile) => {
+    // console.log(fileTest)
     // setPreview(base64)
+    setCount(0)
+    setLoading(true)
     let body = new FormData();
+    body.append('file', rawFile);
+    // body.append('file', fileTest[1]);
+    // body.append('file', fileTest[2]);
+    // body.append('file', fileTest[3]);
+    // body.append('file', fileTest[4]);
     
-    body.append('file', fileTest[0]);
-    body.append('file', fileTest[1]);
-    body.append('file', fileTest[2]);
-    body.append('file', fileTest[3]);
-
+    
     // const res = await createFetch().post('http://localhost:5000/api/parse', body)
-    const res = await createFetch().post('http://localhost:5000/api/parse', body)
+    const res = await createFetch().post('http://localhost:5001/api/parsePassport', body)
+    clearInterval(interval)
+    setCount(0)
     if(res.data) setOpenModal(false)
     console.log(res.data)
     setResult(res.data)
     setText1(get(res, 'data.text1'))
     setText2(get(res, 'data.text2'))
+    setLoading(false)
       // check(lines[0], lines[1])
   }
   // console.log(result)
@@ -116,7 +132,7 @@ function App() {
   return (
     <div className="App">
       <ImageEditor
-        getImage={(image, base64, file, rawFile) => test(image, base64, file, rawFile)}
+        getImage={(image, base64, rawFile) => test(image, base64, rawFile)}
         cropBoxData={{
           height: 99.43576049804688,
           left: 724.34033203125,
@@ -146,13 +162,19 @@ function App() {
 
       </Modal>
       }
-      <p>{ocr && ocr}</p>
+      {/* <p>{ocr && ocr}</p> */}
       {preview && <p>Passport MRZ</p>}
-      {preview && <img style={{maxWidth: "800px", minWidth: "700px"}} src={preview} alt="" />}
-      {preProcessingImage && <p>Image after processing</p>}
-      {preProcessingImage && <img style={{maxWidth: "600px"}} src={preProcessingImage} alt="" />}
+      {preview && preview && <img style={{maxWidth: "450px", minWidth: "300px"}} src={preview} alt="" />}
+      {loading && <p
+        style={{
+          margin: '20px',
+          fontSize: '30px',
+        }}
+      >Recognizing...&nbsp;<Icon type="loading"/></p>}
+      {result && <p>Image after processing</p>}
+      {result && <img style={{maxWidth: "450px", minWidth: "300px"}} src={result.preprocessingImage} alt="" />}
       <br />
-      <Button onClick={() => parseMrz(null, preview)}>Parse Image to MRZ</Button>
+      {/* <Button onClick={() => parseMrz(null, preview)}>Parse Image to MRZ</Button> */}
       <br />
       <em>Line 1 missing&nbsp;{44 - (text1 || '').length}</em>
       <Input
