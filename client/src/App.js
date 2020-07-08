@@ -5,8 +5,8 @@ import ImageEditor from './ImageEditor'
 import MrzEditor from './MrzEditor'
 import { parse } from 'mrz'
 import createFetch from './fetch'
-import {dataURLtoFile} from './helpers'
-import {get} from 'lodash'
+import { dataURLtoFile } from './helpers'
+import { get } from 'lodash'
 
 function App() {
   const [ocr, setOcr] = useState(null);
@@ -28,7 +28,7 @@ function App() {
   const [openModal, setOpenModal] = useState(false)
 
   const openCropMrzModal = (url) => {
-    if(url) {
+    if (url) {
       const file = dataURLtoFile(url)
       setPreProcessingFile(file)
       setOpenModal(true)
@@ -50,12 +50,12 @@ function App() {
       const res = await createFetch().post('http://localhost:5000/api/upload', body)
       // const { data } = await parsePassport(file)
       console.log(res)
-      if(!res.data) {
+      if (!res.data) {
         alert('Cannot parse ....')
       }
       openCropMrzModal(((res.data || {}).processedImage))
-      
-      
+
+
     } catch (e) {
       console.log(e)
     }
@@ -113,19 +113,19 @@ function App() {
     // body.append('file', fileTest[2]);
     // body.append('file', fileTest[3]);
     // body.append('file', fileTest[4]);
-    
-    
+
+
     // const res = await createFetch().post('http://localhost:5000/api/parse', body)
     const res = await createFetch().post('http://localhost:5001/api/parsePassport', body)
     clearInterval(interval)
     setCount(0)
-    if(res.data) setOpenModal(false)
+    if (res.data) setOpenModal(false)
     console.log(res.data)
     setResult(res.data)
     setText1(get(res, 'data.text1'))
     setText2(get(res, 'data.text2'))
     setLoading(false)
-      // check(lines[0], lines[1])
+    // check(lines[0], lines[1])
   }
   // console.log(result)
 
@@ -140,39 +140,60 @@ function App() {
           width: 640.2647094726562,
         }}
       />
-      {openModal && 
-      <Modal
-      
-      visible={openModal}
-      onCancel={() => setOpenModal(false)}
-      width={1080}
-      footer={false}
-      >
-        <MrzEditor
-          initialPreProcessingFile={preProcessingFile}
-          initialFile={initialFile}
-          getImage={(image, base64, file, rawFile) => parseMrz(image, base64, file, rawFile)}
+      {openModal &&
+        <Modal
+
+          visible={openModal}
+          onCancel={() => setOpenModal(false)}
+          width={1080}
+          footer={false}
+        >
+          <MrzEditor
+            initialPreProcessingFile={preProcessingFile}
+            initialFile={initialFile}
+            getImage={(image, base64, file, rawFile) => parseMrz(image, base64, file, rawFile)}
           // cropBoxData={{
           //   height: 99.43576049804688,
           //   left: 724.34033203125,
           //   top: 289.9609680175781,
           //   width: 640.2647094726562,
           // }}
-        />
+          />
 
-      </Modal>
+        </Modal>
       }
       {/* <p>{ocr && ocr}</p> */}
       {preview && <p>Passport MRZ</p>}
-      {preview && preview && <img style={{maxWidth: "450px", minWidth: "300px"}} src={preview} alt="" />}
+      {preview && preview && <img style={{ maxWidth: "450px", minWidth: "300px" }} src={preview} alt="" />}
       {loading && <p
         style={{
           margin: '20px',
           fontSize: '30px',
         }}
-      >Recognizing...&nbsp;<Icon type="loading"/></p>}
+      >Recognizing...&nbsp;<Icon type="loading" /></p>}
       {result && <p>Image after processing</p>}
-      {result && <img style={{maxWidth: "450px", minWidth: "300px"}} src={result.preprocessingImage} alt="" />}
+      {result && 
+            <img src={result.preprocessingImage}
+              style={{
+                maxWidth: "450px", minWidth: "300px",
+                margin: "20px 0"
+              }}
+            />
+      }
+      {/* {result && result.images.map(item => {
+        return (
+          <>
+            <img src={item}
+              style={{
+                maxWidth: "450px", minWidth: "300px",
+                margin: "20px 0"
+              }}
+            />
+            <br />
+          </>
+        )
+      })} */}
+      
       <br />
       {/* <Button onClick={() => parseMrz(null, preview)}>Parse Image to MRZ</Button> */}
       <br />
@@ -186,8 +207,7 @@ function App() {
         value={text2}
         onChange={e => setText2(e.target.value)}
       />
-      <Button onClick={() => check()}>Parse MRZ To Information</Button>
-      {result && result.details  && result.details.map((item, index) => {
+      {result && result.details && result.details.map((item, index) => {
         return (
           <p key={index}>{item.label}:&nbsp;{item.value}</p>
         )

@@ -119,7 +119,7 @@ function greyscaleImage(url, ratio, callback) {
        * Test
        */
       let results = [];
-      [0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85].map((item, index) => {
+      [0.4, 0.7, 0.75, 0.8, 0.85].map((item, index) => {
         computeAdaptiveThreshold(imgPixels, item, (result) => {
           // imgPixels.data = result
           ctx.putImageData(result, 0, 0, 0, 0, imgPixels.width, imgPixels.height);

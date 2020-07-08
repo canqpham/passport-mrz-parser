@@ -1,6 +1,6 @@
 const express = require('express')
 const app = express()
-const { createWorker } = require('tesseract.js')
+const { createWorker, createScheduler } = require('tesseract.js')
 // const fileExample = require('./data')
 const path = require('path')
 const http = require('http')
@@ -13,16 +13,43 @@ const detect = require('./src/detect')
 var rimraf = require("rimraf");
 const greyscaleImage = require('./src/helper')
 
-let worker
-try {
-    worker = createWorker({
-        langPath: path.join(__dirname, './', 'lang-data'),
-        logger: m => console.log(m),
-    })
+const scheduler = createScheduler();
 
-} catch (e) {
-    console.log(e)
-}
+let worker1 = createWorker({
+    langPath: path.join(__dirname, './', 'lang-data'),
+    logger: m => console.log(m),
+})
+
+let worker2 = createWorker({
+    langPath: path.join(__dirname, './', 'lang-data'),
+    logger: m => console.log(m),
+})
+
+let worker3 = createWorker({
+    langPath: path.join(__dirname, './', 'lang-data'),
+    logger: m => console.log(m),
+})
+
+let worker4 = createWorker({
+    langPath: path.join(__dirname, './', 'lang-data'),
+    logger: m => console.log(m),
+})
+
+let worker5 = createWorker({
+    langPath: path.join(__dirname, './', 'lang-data'),
+    logger: m => console.log(m),
+})
+
+let worker6 = createWorker({
+    langPath: path.join(__dirname, './', 'lang-data'),
+    logger: m => console.log(m),
+})
+
+let worker7 = createWorker({
+    langPath: path.join(__dirname, './', 'lang-data'),
+    logger: m => console.log(m),
+})
+
 
 
 const storage = multer.diskStorage({
@@ -78,14 +105,15 @@ const parseMrz = (data) => {
     return { ...result, text1, text2 }
 }
 
+// Parse Mrz to Text
 app.post('/api/parseMrz', upload.array('file'), async (req, response) => {
     try {
         const files = req.files
         const result = []
-        await worker.load();
-        await worker.loadLanguage('mrz');
-        await worker.initialize('mrz');
-        await worker.setParameters(TESSERACT_CONFIG);
+        await worker1.load();
+        await worker1.loadLanguage('mrz');
+        await worker1.initialize('mrz');
+        await worker1.setParameters(TESSERACT_CONFIG);
         const handleRequest = () => {
             let bestData = {}
             let bestCount = 0
@@ -100,16 +128,16 @@ app.post('/api/parseMrz', upload.array('file'), async (req, response) => {
             console.log('Files Count: ', files.length)
             response.json(bestData)
         }
-        worker.recognize(`./uploads/${files[0].originalname}`).then(res1 => {
+        worker1.recognize(`./uploads/${files[0].originalname}`).then(res1 => {
             result.push(parseMrz(res1.data))
             if (files[1]) {
-                worker.recognize(`./uploads/${files[1].originalname}`).then(res2 => {
+                worker1.recognize(`./uploads/${files[1].originalname}`).then(res2 => {
                     result.push(parseMrz(res2.data))
                     if (files[2]) {
-                        worker.recognize(`./uploads/${files[2].originalname}`).then(res3 => {
+                        worker1.recognize(`./uploads/${files[2].originalname}`).then(res3 => {
                             result.push(parseMrz(res3.data))
                             if (files[3]) {
-                                worker.recognize(`./uploads/${files[3].originalname}`).then(res4 => {
+                                worker1.recognize(`./uploads/${files[3].originalname}`).then(res4 => {
                                     console.log(res4.data.lines[0].text)
                                     console.log(res4.data.lines[1].text)
                                     result.push(parseMrz(res4.data))
@@ -137,15 +165,55 @@ app.post('/api/parseMrz', upload.array('file'), async (req, response) => {
     }
 })
 
+// Parse from full Passport Image to Text
 app.post('/api/parsePassport', upload.array('file'), async (req, response) => {
     console.log('called')
     try {
         const files = req.files
-        let result = []
-        // cons
         for (let i = 0; i < files.length; i++) {
             await detect(`./uploads/${files[i].originalname}`)
         }
+
+        await worker1.load();
+        await worker2.load();
+        await worker3.load();
+        await worker4.load();
+        await worker5.load();
+        await worker6.load();
+        await worker7.load();
+
+        await worker1.loadLanguage('mrz');
+        await worker2.loadLanguage('mrz');
+        await worker3.loadLanguage('mrz');
+        await worker4.loadLanguage('mrz');
+        await worker5.loadLanguage('mrz');
+        await worker6.loadLanguage('mrz');
+        await worker7.loadLanguage('mrz');
+
+        await worker1.initialize('mrz');
+        await worker2.initialize('mrz');
+        await worker3.initialize('mrz');
+        await worker4.initialize('mrz');
+        await worker5.initialize('mrz');
+        await worker6.initialize('mrz');
+        await worker7.initialize('mrz');
+
+        await worker1.setParameters(TESSERACT_CONFIG);
+        await worker2.setParameters(TESSERACT_CONFIG);
+        await worker3.setParameters(TESSERACT_CONFIG);
+        await worker4.setParameters(TESSERACT_CONFIG);
+        await worker5.setParameters(TESSERACT_CONFIG);
+        await worker6.setParameters(TESSERACT_CONFIG);
+        await worker7.setParameters(TESSERACT_CONFIG);
+
+        scheduler.addWorker(worker1);
+        scheduler.addWorker(worker2);
+        scheduler.addWorker(worker3);
+        scheduler.addWorker(worker4);
+        scheduler.addWorker(worker5);
+        scheduler.addWorker(worker6);
+        scheduler.addWorker(worker7);
+
         const handleRequest = (results) => {
             let bestData = {}
             let bestCount = 0
@@ -166,20 +234,14 @@ app.post('/api/parsePassport', upload.array('file'), async (req, response) => {
             })
         }
         if (fs.existsSync(`./uploads/out/crop/${files[0].originalname}`)) {
-            await worker.load();
-            await worker.loadLanguage('mrz');
-            await worker.initialize('mrz');
-            await worker.setParameters(TESSERACT_CONFIG);
             greyscaleImage(`./uploads/out/crop/${files[0].originalname}`, 1, async (results) => {
-                for (let i = 0; i < results.length; i++) {
-                    const { data } = await worker.recognize(results[i])
-                    result.push({ ...parseMrz(data), preprocessingImage: results[i] })
-                    const count = sum((data.details || []).map(it => it.value && 1))
-                    if (count === 15) {
-                        break;
-                    }
-                }
-                handleRequest(result)
+                const resultss = await Promise.all(results.map((item) => (
+                    scheduler.addJob('recognize', item)
+                  )))
+                let tempData = []
+                resultss.map(item => tempData.push(item.data))
+                console.log(tempData)
+                handleRequest(tempData.map((item, index) => ({...parseMrz(item), preprocessingImage: results[index]})))
             })
         }
     } catch (e) {
@@ -190,8 +252,6 @@ app.post('/api/parsePassport', upload.array('file'), async (req, response) => {
         console.log('Cannot get file')
     }
 })
-
-
 
 const server = http.createServer(app);
 

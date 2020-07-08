@@ -215,10 +215,10 @@ function internalGetMrz(image, options = {}) {
 
   if (mrzCropOptions.y < toCrop.height / 2) {
     // image is upside down, turn it back
-    toCrop = toCrop.rotate(180);
+    // toCrop = toCrop.rotate(180);
     const newXY = applyToPoint(getRotationAround(toCrop, 180), mrzCropOptions);
-    mrzCropOptions.x = newXY.x - mrzCropOptions.width;
-    mrzCropOptions.y = newXY.y - mrzCropOptions.height;
+    mrzCropOptions.x = Math.abs(newXY.x - mrzCropOptions.width);
+    mrzCropOptions.y = Math.abs(newXY.y - mrzCropOptions.height);
   }
 
   let cropped = toCrop.crop(mrzCropOptions);
