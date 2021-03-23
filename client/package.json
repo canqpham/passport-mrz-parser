@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@zxing/browser": "0.0.8",
+    "@zxing/library": "^0.18.4",
     "adaptive-threshold": "^1.2.0",
     "antd": "3.26.12",
     "atob": "^2.1.2",

@@ -7,7 +7,8 @@ import { parse } from 'mrz'
 import createFetch from './fetch'
 import { dataURLtoFile } from './helpers'
 import { get } from 'lodash'
-
+import { MultiFormatReader, BarcodeFormat, DecodeHintType, RGBLuminanceSource, BinaryBitmap, HybridBinarizer, PDF417Reader,  } from '@zxing/library';
+import { BrowserPDF417Reader } from '@zxing/browser'
 function App() {
   const [ocr, setOcr] = useState(null);
   const [text1, setText1] = useState(null);
@@ -142,7 +143,6 @@ function App() {
       />
       {openModal &&
         <Modal
-
           visible={openModal}
           onCancel={() => setOpenModal(false)}
           width={1080}
@@ -172,13 +172,13 @@ function App() {
         }}
       >Recognizing...&nbsp;<Icon type="loading" /></p>}
       {result && <p>Image after processing</p>}
-      {result && 
-            <img src={result.preprocessingImage}
-              style={{
-                maxWidth: "450px", minWidth: "300px",
-                margin: "20px 0"
-              }}
-            />
+      {result &&
+        <img src={result.preprocessingImage}
+          style={{
+            maxWidth: "450px", minWidth: "300px",
+            margin: "20px 0"
+          }}
+        />
       }
       {/* {result && result.images.map(item => {
         return (
@@ -193,7 +193,7 @@ function App() {
           </>
         )
       })} */}
-      
+
       <br />
       {/* <Button onClick={() => parseMrz(null, preview)}>Parse Image to MRZ</Button> */}
       <br />
@@ -213,8 +213,81 @@ function App() {
         )
       })}
       <p>{error && 'Please change again'}</p>
+
+      <div style={{ marginTop: 50 }}>
+        <ImageEditor
+          getImage={(image, base64, rawFile) => qrParse(image, base64, rawFile)}
+          cropBoxData={{
+            height: 99.43576049804688,
+            left: 724.34033203125,
+            top: 289.9609680175781,
+            width: 640.2647094726562,
+          }}
+        />
+      </div>
     </div>
   );
+}
+
+const qrParse = (image, base64, rawFile) => {
+  try {
+    
+    
+    // console.log(image)
+    // console.log(base64)
+    // console.log(rawFile)
+
+    // console.log('ZXing code reader initialized');
+
+    
+    var reader = new FileReader();
+    reader.readAsDataURL(rawFile);
+    reader.onload = function (event) {
+      var dataUrl = event.target.result;
+
+      var image = new Image();
+      image.src = dataUrl;
+      image.onload = function () {
+        convertImage(image);
+        // fn(resizedDataUrl);
+      };
+    };
+
+    const convertImage = (image) => {
+      var canvas = document.createElement('canvas');
+
+      var width = image.width;
+      var height = image.height;
+      var ctx = canvas.getContext("2d");
+      ctx.drawImage(image, 0, 0, width, height);
+      var imgData = ctx.getImageData(0, 0, width, height);
+
+      // console.log(ctx)
+      // console.log(imgData)
+
+      const hints = new Map();
+      const formats = [BarcodeFormat.PDF_417, BarcodeFormat.DATA_MATRIX/*, ...*/];
+
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+
+      const reader = new MultiFormatReader();
+
+      reader.setHints(hints);
+
+      const luminanceSource = new RGBLuminanceSource(imgData, width, height);
+      const binaryBitmap = new BinaryBitmap(new HybridBinarizer(luminanceSource));
+      const corReader = new PDF417Reader()
+      console.log(binaryBitmap)
+      // reader.decode(binaryBitmap)
+      // console.log(reader.decode(binaryBitmap))
+      corReader.decode(binaryBitmap)
+      console.log(corReader.decode(binaryBitmap))
+    }
+
+
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 export default App;

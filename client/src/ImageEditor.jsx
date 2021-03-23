@@ -357,11 +357,11 @@ class ImageEditor extends Component {
   }
 
   rotateLeft = () => {
-    this[RandomKey].rotate(-90);
+    this[RandomKey].rotate(-2);
   }
 
   rotateRight = () => {
-    this[RandomKey].rotate(90);
+    this[RandomKey].rotate(2);
   }
 
   zoomIn = () => {
