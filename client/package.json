@@ -12,7 +12,7 @@
     "base64-stream": "^1.0.0",
     "cropperjs": "^1.5.6",
     "get-pixels": "^3.3.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "mdi-react": "^7.2.0",
     "mrz": "^3.1.0",
     "react": "^16.10.2",
