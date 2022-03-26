@@ -19,7 +19,7 @@
     "fs-extra": "^9.0.1",
     "image-js": "^0.21.9",
     "jsdom": "^16.2.2",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "ml-matrix": "^6.5.0",
     "radians-degrees": "^1.0.0",
     "rimraf": "^3.0.2",
